@@ -5,18 +5,18 @@ function busy(on,msg){let b=$('#busy');if(!b){b=document.createElement('div');b.
  if(on){_bz++;b.querySelector('span').textContent=msg||'Memproses…'}else _bz=Math.max(0,_bz-1);b.hidden=_bz===0}
 const wrap=(f,m)=>async function(...a){busy(true,m);try{return await f.apply(this,a)}finally{busy(false)}};
 const seq=async(a,f)=>{const o=[];for(const x of a){o.push(await f(x));await new Promise(r=>setTimeout(r))}return o};
-async function mkThumb(b){const bm=await createImageBitmap(b),k=Math.min(1,240/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bm.width*k));c.height=Math.max(1,Math.round(bm.height*k));c.getContext('2d').drawImage(bm,0,0,c.width,c.height);bm.close&&bm.close();return new Promise(r=>c.toBlob(r,'image/jpeg',.7))}
+async function mkThumb(b){const bm=await createImageBitmap(b),k=Math.min(1,240/Math.max(bm.width,bm.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(bm.width*k));c.height=Math.max(1,Math.round(bm.height*k));c.getContext('2d').drawImage(bm,0,0,c.width,c.height);mkThumb.last=bm.width/bm.height;bm.close&&bm.close();return new Promise(r=>c.toBlob(r,'image/jpeg',.7))}
 const TU=new Map(),SG=new WeakMap(),BI=new WeakMap();let bn=0;
 const bid=b=>b?(BI.get(b)||(BI.set(b,++bn),bn)):0;
 const sig=p=>[p.order,p.cap,p.ts,p.tsEdited,bid(p.edit),bid(p.thumb),JSON.stringify(p.params)].join('|');
 function thumbURL(p){let u=TU.get(p.id);if(!u){u=URL.createObjectURL(p.thumb||p.edit||p.orig);TU.set(p.id,u)}return u}
-async function ensureThumbs(){for(const p of cur.photos)if(!p.thumb){try{p.thumb=await mkThumb(p.edit||p.orig);await put('photos',p);SG.delete(p)}catch{}}}
+async function ensureThumbs(){for(const p of cur.photos)if(!p.thumb||!p.ar){try{p.thumb=await mkThumb(p.edit||p.orig);p.ar=mkThumb.last;await put('photos',p);SG.delete(p)}catch{}}}
 // simpan hanya foto yang berubah (sebelumnya semua blob ditulis ulang tiap simpan)
 save=async function(){const{doc,photos}=cur;doc.updated=new Date().toISOString();const tx=db.transaction(['documents','photos'],'readwrite'),ch=[];tx.objectStore('documents').put(doc);
  photos.forEach((p,i)=>{p.order=i;const s=sig(p);if(SG.get(p)!==s){tx.objectStore('photos').put(p);ch.push([p,s])}});await done(tx);ch.forEach(([p,s])=>SG.set(p,s))};
 const _vd=V.doc;V.doc=async()=>{if(cur&&cur.photos.some(p=>!p.thumb)){busy(true,'Memuat foto…');try{await ensureThumbs()}finally{busy(false)}}TU.forEach(u=>URL.revokeObjectURL(u));TU.clear();return _vd()};
 addFiles=async function(fs,src){const L=[...fs];let n=0;try{for(const f of L){busy(true,`Memproses foto ${++n}/${L.length}…`);const b=new Blob([await f.arrayBuffer()],{type:f.type||'image/jpeg'});
- cur.photos.push({id:uid(),docId:cur.doc.id,orig:b,edit:null,params:null,thumb:await mkThumb(b),cap:'',ts:new Date().toISOString(),tsEdited:false,order:cur.photos.length,src});await doSave()}}
+ cur.photos.push({id:uid(),docId:cur.doc.id,orig:b,edit:null,params:null,thumb:await mkThumb(b),ar:mkThumb.last,cap:'',ts:new Date().toISOString(),tsEdited:false,order:cur.photos.length,src});await doSave()}}
  catch(e){toast('Gagal menambah foto: '+e.message)}finally{while(_bz)busy(false)}V.doc()};
 preview=wrap(preview,'Membuat preview…');exportPdf=wrap(exportPdf,'Membuat PDF…');restore=wrap(restore,'Memulihkan…');
 backup=async function(){busy(true,'Membuat backup…');try{const d=await all('documents'),ps=await all('photos'),parts=[`{"app":"PWA Dokumentasi Struk","backupVersion":1,"createdAt":${JSON.stringify(new Date().toISOString())},"documents":${JSON.stringify(d)},"settings":{},"qrHistory":[],"photos":[`];let i=0;
