@@ -1,7 +1,8 @@
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.3.0/files/inter-latin-wght-normal.woff2) format("woff2")}
 :root{--bg:#f3f5fb;--card:#fff;--tx:#14182b;--mu:#6b7390;--pr:#4f46e5;--pr2:#7c3aed;--bd:#e4e7f2;--dg:#dc2626;--r:16px;--sh:0 2px 12px rgba(30,40,90,.07)}
 @media(prefers-color-scheme:dark){:root{--bg:#0e1020;--card:#181b30;--tx:#eceefb;--mu:#98a0c4;--bd:#272b47;--sh:none;--dg:#f87171}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tx);background:var(--bg);padding-bottom:150px}
+body{margin:0;font:16px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tx);background:var(--bg);padding-bottom:150px}
 #bar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);font-weight:700;font-size:20px}
 #bar img{width:30px;height:30px;border-radius:8px}
 main{padding:4px 14px 14px;max-width:720px;margin:auto}
@@ -48,3 +49,23 @@ nav button{flex:1;flex-direction:column;gap:2px;border-radius:0;background:none;
 .sp{width:44px;height:44px;border:4px solid #fff4;border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
 .card img{cursor:zoom-in}
 #lp{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-top:8px}#lp canvas{flex:none;width:200px;height:auto;border-radius:4px;background:#fff}
+/* v1.5 — kamera & polesan UI */
+html{-webkit-text-size-adjust:100%}button,label,input,select{touch-action:manipulation}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 55%,transparent);outline-offset:2px}
+main{animation:fade .22s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}}
+.dock{bottom:calc(62px + env(safe-area-inset-bottom))}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+#cam{position:fixed;inset:0;z-index:7;background:#000;color:#fff;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.ct{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.ct .ib{background:#ffffff22;color:#fff}
+.cw{position:relative;margin:auto;width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:#111}.cw video,.cw canvas{position:absolute;inset:0;width:100%;height:100%}.cw canvas{touch-action:none}
+.chip{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:#000b;padding:6px 14px;border-radius:99px;font-size:13px;max-width:92%;text-align:center;pointer-events:none}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}.flash.on{animation:fl .25s}@keyframes fl{from{opacity:.85}to{opacity:0}}
+.cb{display:flex;align-items:center;justify-content:space-around;padding:14px 10px calc(18px + env(safe-area-inset-bottom))}.cs2{background:#ffffff22;min-width:88px;color:#fff}
+.shut{width:74px;height:74px;min-height:74px;border-radius:50%;padding:0;background:#fff;border:5px solid #fff7;background-clip:padding-box}.shut:disabled{opacity:.5}
+#cam.fail .shut,#cam.fail #cauto{display:none}.cf{margin:auto;text-align:center;padding:24px}
+/* v1.6 — layar inisialisasi */
+body.booting{overflow:hidden}
+#boot{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;transition:opacity .35s}
+#boot.out{opacity:0;pointer-events:none}#boot img{width:76px;height:76px;border-radius:20px}#boot h2{margin:0;font-size:19px}#boot small{max-width:330px;word-break:break-word;min-height:1.4em}
+#boot .sp{border-color:var(--bd);border-top-color:var(--pr)}#boot.err .sp{display:none}
+.pb{width:min(280px,80%);height:8px;border-radius:9px;background:var(--bd);overflow:hidden}.pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pr),var(--pr2));transition:width .25s}
