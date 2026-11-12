@@ -51,7 +51,7 @@ async function edReset(){ed.p.edit=null;ed.p.params=null;await doSave();edClose(
 async function edSave(){const o=rend(ed.bmp,ed.s,3000);ed.p.edit=await new Promise(r=>o.toBlob(r,'image/jpeg',.92));ed.p.params={...ed.s};await doSave();edClose()}
 // ---- Layout & PDF
 async function build(){const{doc:d,photos:ph}=cur;if(!ph.length)throw Error('Belum ada foto');
-const prep=await Promise.all(ph.map(async p=>{const b=await createImageBitmap(p.edit||p.orig),s=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);b.close&&b.close();return{w:c.width,h:c.height,url:c.toDataURL('image/jpeg',.85)}}));
+const prep=await seq(ph,async p=>{const b=await createImageBitmap(p.edit||p.orig),s=Math.min(1,1500/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);b.close&&b.close();return{w:c.width,h:c.height,url:c.toDataURL('image/jpeg',.8)}});
 const L=d.orient==='l',W=L?297:210,H=L?210:297,m=+d.margin||10,g=+d.gap||4,n=ph.length;
 const pdf=new window.jspdf.jsPDF({orientation:L?'l':'p',unit:'mm',format:'a4'});
 const pp=Math.min(n,d.mode==='pages'?Math.ceil(n/Math.max(1,+d.val||1)):d.mode==='per'?Math.max(1,+d.val||1):(L?6:4));
