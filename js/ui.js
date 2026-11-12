@@ -1,0 +1,52 @@
+'use strict';
+const IC={home:'<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+qr:'<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+doc:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+archive:'<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+settings:'<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
+camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+image:'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+up:'<path d="m18 15-6-6-6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',
+edit:'<path d="M12 20h9"/><path d="M16.4 3.6a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+save:'<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+rotate:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+link:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+copy:'<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>'};
+const ic=(n,s=20)=>`<svg class=ic width=${s} height=${s} viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>${IC[n]}</svg>`;
+const B=(i,t,c,o)=>`<button class="${c||''}" onclick="${o}">${ic(i,18)}<span>${t}</span></button>`;
+const IB=(i,l,c,o)=>`<button class="ib ${c||''}" aria-label="${l}" onclick="${o}">${ic(i,18)}</button>`;
+const NAV={home:['home','Beranda'],qr:['qr','Scan QR'],doc:['doc','Dokumen'],arc:['archive','Arsip'],set:['settings','Setelan']};
+document.querySelectorAll('nav button').forEach(b=>{const[i,t]=NAV[b.dataset.v];b.innerHTML=ic(i,22)+`<span>${t}</span>`});
+const _go=go;go=async function(v){$('#ttl').textContent=NAV[v][1];scrollTo(0,0);return _go(v)};
+V.home=async()=>{const d=await all('documents'),p=await all('photos'),e=await est(),pc=e&&e.quota?Math.min(100,e.usage/e.quota*100):0;
+M.innerHTML=`<section class=hero><small>Total arsip</small><div class=stats><div><b>${d.length}</b><span>Dokumen</span></div><div><b>${p.length}</b><span>Foto</span></div></div>${e?`<div class=bar><i style="width:${Math.max(2,pc)}%"></i></div><small>${mb(e.usage)} dari ±${mb(e.quota)} terpakai</small>`:''}</section>
+<div class=tiles><button class=tile onclick="go('qr')"><span class=ti>${ic('qr',26)}</span><b>Scan QR</b><small>Baca &amp; buka tautan</small></button><button class=tile onclick="newDoc()"><span class=ti>${ic('camera',26)}</span><b>Dokumentasi Baru</b><small>Foto struk → PDF</small></button></div>
+<div class=note>${ic('download',18)}<span>Data hanya tersimpan di perangkat ini. Lakukan Backup JSON secara berkala lewat menu Setelan.</span></div>`};
+V.doc=async()=>{if(!cur)return newDoc();const{doc:d,photos:ph}=cur;
+M.innerHTML=`<section class=panel><h3>Header PDF</h3><label>Judul<input value="${esc(d.title)}" oninput="cur.doc.title=this.value"></label><label>Subjudul (opsional)<input value="${esc(d.subtitle)}" oninput="cur.doc.subtitle=this.value"></label></section>
+<section class=panel><h3>Foto<em>${ph.length}</em></h3><div class=row><label class=btn>${ic('camera',18)}<span>Ambil Foto</span><input type=file accept="image/*" capture=environment hidden onchange="addFiles(this.files,'kamera');this.value=''"></label><label class="btn s">${ic('image',18)}<span>Galeri</span><input type=file accept="image/*" multiple hidden onchange="addFiles(this.files,'galeri');this.value=''"></label></div>
+${ph.length?'':`<div class=empty>${ic('image',44)}<p>Belum ada foto.<br>Ambil foto struk atau pilih dari galeri.</p></div>`}
+${ph.map((p,i)=>`<div class=card><span class=n>${i+1}</span><img src="${URL.createObjectURL(p.edit||p.orig)}" alt=""><div><input placeholder="Keterangan, mis. BUKTI PARKIR" value="${esc(p.cap)}" oninput="cur.photos[${i}].cap=this.value"><small>${fmt(p.ts)}${p.tsEdited?' (diedit)':''}</small><div class=row>${IB('up','Naik','',`mv(${i},-1)`)}${IB('down','Turun','',`mv(${i},1)`)}${IB('image','Edit foto','',`edP(${i})`)}${IB('edit','Ubah waktu','',`editTs(${i})`)}${IB('trash','Hapus','d',`rmP(${i})`)}</div></div></div>`).join('')}</section>
+<section class=panel><h3>Layout PDF A4</h3><div class=row><select onchange="cur.doc.orient=this.value"><option value=p ${d.orient=='p'?'selected':''}>Portrait</option><option value=l ${d.orient=='l'?'selected':''}>Landscape</option></select><select onchange="cur.doc.mode=this.value;V.doc()"><option value=auto ${d.mode=='auto'?'selected':''}>Otomatis</option><option value=pages ${d.mode=='pages'?'selected':''}>Jumlah halaman</option><option value=per ${d.mode=='per'?'selected':''}>Foto per halaman</option></select></div>
+${d.mode!='auto'?`<label>${d.mode=='pages'?'Target jumlah halaman':'Foto per halaman'}<input type=number min=1 value="${d.val}" oninput="cur.doc.val=this.value"></label>`:''}
+<div class=row><label>Margin (mm)<input type=number min=5 max=30 value="${d.margin}" oninput="cur.doc.margin=this.value"></label><label>Jarak (mm)<input type=number min=1 max=20 value="${d.gap}" oninput="cur.doc.gap=this.value"></label></div></section>
+<div class=dock>${IB('save','Simpan','',"doSave().then(()=>toast('Tersimpan'))")}${B('eye','Preview','s','preview()')}${B('file','Ekspor PDF','','exportPdf()')}</div>`};
+V.arc=async()=>{const d=(await all('documents')).sort((a,b)=>b.created.localeCompare(a.created)),p=await all('photos');
+M.innerHTML=d.length?d.map(x=>`<div class=panel><b>${esc(x.title||'(tanpa judul)')}</b><br><small>${fmt(x.created)} · ${p.filter(q=>q.docId===x.id).length} foto · ${(x.pdfs||[]).length}× PDF</small><div class=row>${B('edit','Buka','s',`openDoc('${x.id}')`)}${B('trash','Hapus','d',`delDoc('${x.id}')`)}</div></div>`).join(''):`<div class=empty>${ic('archive',48)}<p>Arsip masih kosong.</p>${B('plus','Dokumentasi Baru','','newDoc()')}</div>`};
+V.set=async()=>{const e=await est(),pe=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():false;
+M.innerHTML=`<section class=panel><h3>Penyimpanan</h3>${e?`<div class=bar style="background:var(--bd)"><i style="width:${Math.max(2,Math.min(100,e.usage/e.quota*100))}%;background:var(--pr)"></i></div><small>${mb(e.usage)} / ±${mb(e.quota)}</small><br>`:''}Persisten: <b>${pe?'aktif':'tidak dijamin'}</b><br><small>Data bisa hilang jika browser dibersihkan atau perangkat rusak. Backup wajib.</small></section>
+<section class=panel><h3>Backup</h3>${B('download','Backup Data (JSON)','','backup()')}<p><small>File bisa besar karena foto disimpan sebagai Base64.</small></p></section>
+<section class=panel><h3>Restore</h3><select id=rm><option value=merge>Gabungkan dengan data lokal</option><option value=replace>Ganti seluruh data lokal</option></select><label class="btn s">${ic('upload',18)}<span>Pilih file backup</span><input type=file accept=".json,application/json" hidden onchange="restore(this.files[0],$('#rm').value);this.value=''"></label></section>
+<section class=panel>${B('trash','Hapus semua data lokal','d','wipe()')}</section><p style="text-align:center"><small>v1.1 · semua data tersimpan lokal</small></p>`};
+V.qr=async()=>{M.innerHTML=`<select id=cams onchange="qrStart(this.value)"></select><div class=scan><video id=vd playsinline muted></video></div><div id=qres><p style="text-align:center"><small>Arahkan kamera ke QR Code</small></p></div>`;qrStart()};
+qrShow=function(t){qlast=t;let u=null;try{const x=new URL(t);if(/^https?:$/.test(x.protocol))u=x.href}catch{}
+$('#qres').innerHTML=`<section class=panel><span class=tag>${u?'Tautan':'Teks'}</span><p class=res>${esc(t)}</p><div class=row>${u?`<a class=btn href="${esc(u)}" target=_blank rel=noopener style="text-decoration:none">${ic('link',18)}<span>Buka URL</span></a>`:''}${B('copy','Salin','s',"navigator.clipboard.writeText(qlast).then(()=>toast('Disalin'))")}${B('rotate','Scan Lagi','s',"qrStart($('#cams').value||undefined)")}</div></section>`};
+edP=async function(i){const p=cur.photos[i];ed={i,p,bmp:await createImageBitmap(p.orig),s:{rot:0,b:0,c:0,l:0,t:0,r:0,bt:0,...(p.params||{})}};
+const sl=(k,n,a,b)=>`<label class=sl><span>${n}</span><input type=range min=${a} max=${b} value=${ed.s[k]} oninput="ed.s.${k}=+this.value;edDraw()"></label>`;
+const m=$('#modal');m.hidden=false;m.innerHTML=`<div class=sheet-h><b>Edit Foto</b>${IB('x','Tutup','','edClose()')}</div><div class=cv><canvas id=edc></canvas></div>${B('rotate','Putar 90°','s','ed.s.rot=(ed.s.rot+1)%4;edDraw()')}<section class=panel>${sl('b','Kecerahan',-60,60)}${sl('c','Kontras',-60,60)}${sl('l','Potong kiri %',0,40)}${sl('r','Potong kanan %',0,40)}${sl('t','Potong atas %',0,40)}${sl('bt','Potong bawah %',0,40)}</section><div class=row>${B('save','Simpan','','edSave()')}${B('rotate','Reset ke asli','s','edReset()')}</div>`;edDraw()};
