@@ -1,1 +1,43 @@
-{"name":"Dokumentasi Struk & QR Scanner","short_name":"Struk","start_url":"./index.html","scope":"./","display":"standalone","background_color":"#ffffff","theme_color":"#4f46e5","icons":[{"src":"assets/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"assets/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}
+{
+ "name": "Dokumentasi Struk & QR Scanner",
+ "short_name": "Struk",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#ffffff",
+ "theme_color": "#4f46e5",
+ "icons": [
+  {
+   "src": "assets/icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "assets/icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "assets/icons/icon-maskable-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "maskable"
+  },
+  {
+   "src": "assets/icons/icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ],
+ "id": "./index.html",
+ "description": "Pindai QR dan dokumentasikan struk menjadi PDF A4, semua data tersimpan lokal.",
+ "orientation": "portrait",
+ "categories": [
+  "productivity",
+  "utilities"
+ ],
+ "lang": "id"
+}

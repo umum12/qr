@@ -17,5 +17,7 @@ self.addEventListener('message',e=>{const p=e.ports&&e.ports[0],d=e.data||{};if(
  else if(d.type==='VERIFY')e.waitUntil(verify(!!d.deep).then(r=>p.postMessage({type:'verify',...r})));
  else if(d.type==='PRECACHE')e.waitUntil(precache(m=>p.postMessage(m)))});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!/^https?:/.test(e.request.url))return;
- e.respondWith((async()=>{const o={ignoreSearch:true,ignoreVary:true},c=await caches.open(CACHE),r=await c.match(e.request,o);if(r)return r;
+ e.respondWith((async()=>{const o={ignoreSearch:true,ignoreVary:true},c=await caches.open(CACHE),U=new URL(e.request.url);
+  if(U.origin===location.origin&&/(\/|\/index\.html|\/js\/resources\.js)$/.test(U.pathname)){try{const n=await Promise.race([fetch(e.request),new Promise((_,j)=>setTimeout(()=>j(0),3000))]);if(n&&n.ok&&!n.redirected)return n}catch{}}   // network-first (3 dtk) agar versi baru terdeteksi cepat
+  const r=await c.match(e.request,o);if(r)return r;
   try{return await fetch(e.request)}catch(x){const old=await caches.match(e.request,o);if(old)return old;throw x}})())});
