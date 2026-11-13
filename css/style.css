@@ -98,3 +98,9 @@ body.booting{overflow:hidden}
 #cam.v2 .chip{top:calc(env(safe-area-inset-top) + 66px)}
 #cam.v2 .czoom{position:absolute;left:16px;right:16px;bottom:12px;z-index:3;padding:2px 14px;border-radius:99px;background:#0008;color:#fff}
 #cam.v2 .cb{flex:none;background:#000;padding:10px 10px calc(14px + env(safe-area-inset-bottom))}
+/* v1.9 — perbaikan audit */
+#toast{z-index:30}#bootSkip{margin-top:4px}
+#upd{position:fixed;top:calc(8px + env(safe-area-inset-top));left:12px;right:12px;max-width:520px;margin:auto;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 16px;border-radius:14px;background:var(--pr);color:#fff;box-shadow:0 6px 24px #0004}#upd button{min-height:38px;background:#fff;color:var(--pr)}
+#bar{padding-top:calc(12px + env(safe-area-inset-top))}main{padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+@media(max-width:360px){#inst span{display:none}#inst{padding:6px 10px}}
+.qhost{font-size:22px;font-weight:800;margin:4px 0 2px;word-break:break-all}.qwarn{margin:6px 0;padding:8px 10px;border-radius:10px;font-size:13.5px;font-weight:600;background:color-mix(in srgb,#f59e0b 18%,var(--card));color:var(--tx)}
