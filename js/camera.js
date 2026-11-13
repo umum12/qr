@@ -18,7 +18,6 @@ function camSwitch(){const c=cam;if(!c||!c.devs.length)return;c.di=(c.di+1)%c.de
 function closeCam(skip){const c=cam;if(!c)return;c.run=false;camStop();c.o.remove();cam=null;if(skip!==1)V.doc()}
 function camFail(e){const c=cam;if(!c)return;c.o.classList.add('fail');const w=$('#cw');if(w)w.outerHTML=`<div class=cf><p>Kamera langsung tidak tersedia (${esc(e.name||e.message)}).<br><small>Anda tetap bisa memotret dengan kamera bawaan HP.</small></p><label class=btn>${ic('camera',18)}<span>Pakai kamera bawaan</span><input type=file accept="image/*" capture=environment hidden onchange="const f=this.files;closeCam(1);addFiles(f,'kamera')"></label></div>`}
 function camSize(){const cv=$('#co');if(!cv)return;const r=$('#cw').getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d)}
-addEventListener('resize',()=>{if(cam&&$('#co')){camSize();camDraw()}});
 const camStatus=t=>{const e=$('#cs');if(e)e.textContent=t};
 function camLoop(){const c=cam;if(!c||!c.run)return;clearTimeout(c.t);const step=()=>{if(cam!==c||!c.run)return;const t0=performance.now(),v=$('#cv');
  if(!c.manual&&!document.hidden&&v&&v.videoWidth){try{c.sc.getContext('2d',{willReadFrequently:true}).drawImage(v,0,0,c.sc.width,c.sc.height);const r=detect(c.sc);camUpdate(r&&qArea(r)>.1?r:null)}

@@ -12,9 +12,9 @@ const sig=p=>[p.order,p.cap,p.ts,p.tsEdited,bid(p.edit),bid(p.thumb),JSON.string
 function thumbURL(p){let u=TU.get(p.id);if(!u){u=URL.createObjectURL(p.thumb||p.edit||p.orig);TU.set(p.id,u)}return u}
 async function ensureThumbs(){for(const p of cur.photos)if(!p.thumb||!p.ar){try{p.thumb=await mkThumb(p.edit||p.orig);p.ar=mkThumb.last;await put('photos',p);SG.delete(p)}catch{}}}
 // simpan hanya foto yang berubah (sebelumnya semua blob ditulis ulang tiap simpan)
-save=async function(){const{doc,photos}=cur;doc.updated=new Date().toISOString();const tx=db.transaction(['documents','photos'],'readwrite'),ch=[];tx.objectStore('documents').put(doc);
+save=async function(c){c=c||cur;const{doc,photos}=c;doc.updated=new Date().toISOString();const tx=db.transaction(['documents','photos'],'readwrite'),ch=[];tx.objectStore('documents').put(doc);
  photos.forEach((p,i)=>{p.order=i;const s=sig(p);if(SG.get(p)!==s){tx.objectStore('photos').put(p);ch.push([p,s])}});await done(tx);ch.forEach(([p,s])=>SG.set(p,s))};
-const _vd=V.doc;V.doc=async()=>{if(cur&&cur.photos.some(p=>!p.thumb)){busy(true,'Memuat foto…');try{await ensureThumbs()}finally{busy(false)}}TU.forEach(u=>URL.revokeObjectURL(u));TU.clear();return _vd()};
+const _vd=V.doc;V.doc=async()=>{if(cur&&cur.photos.some(p=>!p.thumb&&!(typeof BAD!=='undefined'&&BAD.has(p)))){busy(true,'Memuat foto…');try{await ensureThumbs()}finally{busy(false)}}TU.forEach(u=>URL.revokeObjectURL(u));TU.clear();return _vd()};
 addFiles=async function(fs,src){const L=[...fs];let n=0;try{for(const f of L){busy(true,`Memproses foto ${++n}/${L.length}…`);const b=new Blob([await f.arrayBuffer()],{type:f.type||'image/jpeg'});
  cur.photos.push({id:uid(),docId:cur.doc.id,orig:b,edit:null,params:null,thumb:await mkThumb(b),ar:mkThumb.last,cap:'',ts:new Date().toISOString(),tsEdited:false,order:cur.photos.length,src});await doSave()}}
  catch(e){toast('Gagal menambah foto: '+e.message)}finally{while(_bz)busy(false)}V.doc()};
@@ -22,7 +22,7 @@ preview=wrap(preview,'Membuat preview…');exportPdf=wrap(exportPdf,'Membuat PDF
 backup=async function(){busy(true,'Membuat backup…');try{const d=await all('documents'),ps=await all('photos'),parts=[`{"app":"PWA Dokumentasi Struk","backupVersion":1,"createdAt":${JSON.stringify(new Date().toISOString())},"documents":${JSON.stringify(d)},"settings":{},"qrHistory":[],"photos":[`];let i=0;
  for(const p of ps){busy(true,`Backup foto ${++i}/${ps.length}…`);parts.push((i>1?',':'')+JSON.stringify({...p,thumb:undefined,orig:await b64(p.orig),edit:p.edit?await b64(p.edit):null}))}
  parts.push(']}');const b=new Blob(parts,{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`Backup_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.json`;a.click();toast(`Backup: ${d.length} dokumen, ${ps.length} foto, ${mb(b.size)}`)}catch(e){toast('Backup gagal: '+e.message)}finally{busy(false)}};
-function viewP(i){const p=cur.photos[i],m=$('#modal'),u=URL.createObjectURL(p.edit||p.orig);m.hidden=false;
+function viewP(i){const p=cur.photos[i],m=$('#modal'),u=URL.createObjectURL(p.edit||p.orig);if(viewP.u)URL.revokeObjectURL(viewP.u);viewP.u=u;m.hidden=false;
  m.innerHTML=`<div class=sheet-h><b>Foto ${i+1}</b>${IB('x','Tutup','',"$('#modal').hidden=true")}</div><img id=vi src="${u}" style="width:100%;border-radius:12px;background:#fff">${p.edit?`<div class=row><button class=s style="user-select:none;-webkit-user-select:none;touch-action:none" oncontextmenu="return false" onpointerdown="vo(${i},1)" onpointerup="vo(${i},0)" onpointerleave="vo(${i},0)" onpointercancel="vo(${i},0)">${ic('eye',18)}<span>Tahan: lihat foto asli</span></button></div>`:''}`}
 let _vu=null;function vo(i,o){const p=cur.photos[i],im=$('#vi');if(!im)return;if(_vu)URL.revokeObjectURL(_vu);_vu=URL.createObjectURL(o?p.orig:(p.edit||p.orig));im.src=_vu}
 // ===== Document scanner: homografi, filter, deteksi tepi =====
@@ -30,7 +30,7 @@ function H(dst,src){const A=[];for(let i=0;i<4;i++){const[x,y]=dst[i],[u,v]=src[
  for(let i=0;i<8;i++){let m=i;for(let r=i+1;r<8;r++)if(Math.abs(A[r][i])>Math.abs(A[m][i]))m=r;[A[i],A[m]]=[A[m],A[i]];for(let r=0;r<8;r++){if(r===i)continue;const f=A[r][i]/A[i][i];for(let c=i;c<9;c++)A[r][c]-=f*A[i][c]}}
  return A.map((r,i)=>r[8]/r[i]).slice(0,8)}
 function warpC(bmp,cn,maxOut,cache){const key=maxOut+'|'+cn.join();if(cache&&cache.key===key)return cache.c;
- const k=Math.min(1,maxOut*1.5/Math.max(bmp.width,bmp.height)),sw=Math.round(bmp.width*k),sh=Math.round(bmp.height*k),sc=document.createElement('canvas');sc.width=sw;sc.height=sh;const sx=sc.getContext('2d');sx.drawImage(bmp,0,0,sw,sh);const sd=sx.getImageData(0,0,sw,sh).data;
+ const k=Math.min(1,maxOut*1.25/Math.max(bmp.width,bmp.height)),sw=Math.round(bmp.width*k),sh=Math.round(bmp.height*k),sc=document.createElement('canvas');sc.width=sw;sc.height=sh;const sx=sc.getContext('2d');sx.drawImage(bmp,0,0,sw,sh);const sd=sx.getImageData(0,0,sw,sh).data;
  const q=cn.map(([x,y])=>[x*sw,y*sh]),dd=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let W=Math.max(dd(q[0],q[1]),dd(q[3],q[2])),Hh=Math.max(dd(q[0],q[3]),dd(q[1],q[2]));const f=Math.min(1,maxOut/Math.max(W,Hh));W=Math.max(2,Math.round(W*f));Hh=Math.max(2,Math.round(Hh*f));
  const h=H([[0,0],[W,0],[W,Hh],[0,Hh]],q),c=document.createElement('canvas');c.width=W;c.height=Hh;const cx=c.getContext('2d'),o=cx.createImageData(W,Hh),od=o.data;
  for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){const w=h[6]*x+h[7]*y+1,u=(h[0]*x+h[1]*y+h[2])/w,v=(h[3]*x+h[4]*y+h[5])/w,i=(y*W+x)*4;od[i+3]=255;
@@ -83,4 +83,4 @@ let _ft;function fxSoon(){clearTimeout(_ft);_ft=setTimeout(fxDraw,70)}
 function cmp(on){const c=$('#edc');if(!c)return;if(!on)return fxDraw();const k=Math.min(1,900/Math.max(ed.bmp.width,ed.bmp.height));c.width=Math.round(ed.bmp.width*k);c.height=Math.round(ed.bmp.height*k);c.getContext('2d').drawImage(ed.bmp,0,0,c.width,c.height)}
 edClose=function(){if(ed&&ed.bmp.close)ed.bmp.close();$('#modal').hidden=true;ed=null;V.doc()};
 edReset=async function(){ed.p.edit=null;ed.p.params=null;ed.p.thumb=null;await doSave();edClose()};
-edSave=async function(){busy(true,'Menyimpan hasil edit…');try{const o=fxC(rotC(warpC(ed.bmp,ed.s.corners,2400),ed.s.rot),ed.s);ed.p.edit=await new Promise(r=>o.toBlob(r,'image/jpeg',.9));ed.p.params={v:2,...ed.s,corners:ed.s.corners.map(a=>[...a])};ed.p.thumb=null;await doSave();edClose()}catch(e){toast('Gagal menyimpan: '+e.message)}finally{busy(false)}};
+edSave=async function(){busy(true,'Menyimpan hasil edit…');try{const o=fxC(rotC(warpC(ed.bmp,ed.s.corners,procMax()),ed.s.rot),ed.s);ed.p.edit=await new Promise(r=>o.toBlob(r,'image/jpeg',.9));ed.p.params={v:2,...ed.s,corners:ed.s.corners.map(a=>[...a])};ed.p.thumb=null;await doSave();edClose()}catch(e){toast('Gagal menyimpan: '+e.message)}finally{busy(false)}};

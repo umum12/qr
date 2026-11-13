@@ -3,12 +3,13 @@ const $=s=>document.querySelector(s),M=$('#main');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
 const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,4000)};
-const fmt=iso=>{const p=Object.fromEntries(new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso)).map(x=>[x.type,x.value]));return `${p.weekday.replace('.','')}, ${p.day} ${p.month.replace('.','')} ${p.year} · ${p.hour}:${p.minute} WIB`};
+const WD=['Min','Sen','Sel','Rab','Kam','Jum','Sab'],MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const fmt=iso=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jakarta',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso)).map(x=>[x.type,x.value]));const wd=new Date(Date.UTC(+p.year,p.month-1,+p.day)).getUTCDay();return `${WD[wd]}, ${p.day.padStart(2,'0')} ${MN[p.month-1]} ${p.year} · ${p.hour}:${p.minute} WIB`};
 const jk=iso=>new Date(iso).toLocaleString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,16).replace(' ','T');
 const mb=n=>(n/1048576).toFixed(1)+' MB';
 // ---- IndexedDB
 let db;
-const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('struk',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('documents',{keyPath:'id'});d.createObjectStore('photos',{keyPath:'id'}).createIndex('docId','docId');d.createObjectStore('settings',{keyPath:'k'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('struk',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('documents',{keyPath:'id'});d.createObjectStore('photos',{keyPath:'id'}).createIndex('docId','docId');d.createObjectStore('settings',{keyPath:'k'})};r.onsuccess=()=>{r.result.onversionchange=()=>{r.result.close();toast('Database diperbarui di tab lain — muat ulang aplikasi')};res(r.result)};r.onblocked=()=>toast('Tutup tab aplikasi lain agar pembaruan database bisa berjalan');r.onerror=()=>rej(r.error)});
 const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 const st=(n,m='readonly')=>db.transaction(n,m).objectStore(n);
 const all=n=>rq(st(n).getAll()),put=(n,v)=>rq(st(n,'readwrite').put(v)),del=(n,k)=>rq(st(n,'readwrite').delete(k));
@@ -77,7 +78,7 @@ $('#pv').append(c)}}catch(e){toast(e.message)}}
 async function exportPdf(){try{toast('Membuat PDF…');await doSave();const r=await build(),b=r.pdf.output('blob'),name=`Dokumentasi_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.pdf`;
 cur.doc.pdfs.push({at:new Date().toISOString(),pages:r.pages});await doSave();
 const f=new File([b],name,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]})&&confirm('Bagikan PDF lewat menu berbagi Android? (Batal = unduh)')){try{await navigator.share({files:[f]});return}catch{}}
-const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();toast(r.warn?'PDF dibuat. Peringatan: foto kecil, keterbacaan mungkin berkurang':'PDF dibuat')}catch(e){toast(e.message)}}
+const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000);toast(r.warn?'PDF dibuat. Peringatan: foto kecil, keterbacaan mungkin berkurang':'PDF dibuat')}catch(e){toast(e.message)}}
 // ---- Arsip
 V.arc=async()=>{const d=(await all('documents')).sort((a,b)=>b.created.localeCompare(a.created)),p=await all('photos');M.innerHTML=`<h2>Arsip</h2>${d.length?'':'<p>Belum ada dokumen.</p>'}${d.map(x=>`<div class=box><b>${esc(x.title||'(tanpa judul)')}</b><br><small>${fmt(x.created)} · ${p.filter(q=>q.docId===x.id).length} foto · ${(x.pdfs||[]).length}× PDF</small><div class=row><button onclick="openDoc('${x.id}')">Buka</button><button class=d onclick="delDoc('${x.id}')">Hapus</button></div></div>`).join('')}`};
 async function delDoc(id){if(!confirm('Hapus dokumen beserta semua fotonya?'))return;const ps=(await all('photos')).filter(p=>p.docId===id),tx=db.transaction(['documents','photos'],'readwrite');tx.objectStore('documents').delete(id);ps.forEach(p=>tx.objectStore('photos').delete(p.id));await done(tx);if(cur&&cur.doc.id===id)cur=null;V.arc()}
@@ -92,8 +93,8 @@ for(const p of ps)o.photos.push({...p,orig:await b64(p.orig),edit:p.edit?await b
 const b=new Blob([JSON.stringify(o)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`Backup_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.json`;a.click();toast(`Backup: ${d.length} dokumen, ${ps.length} foto, ${mb(b.size)}`)}catch(e){toast('Backup gagal: '+e.message)}}
 async function restore(f,mode){if(!f)return;try{const j=JSON.parse(await f.text());
 if(j.app!=='PWA Dokumentasi Struk'||j.backupVersion!==1||!Array.isArray(j.documents)||!Array.isArray(j.photos))throw Error('Format backup tidak dikenali');
-const ids=new Set(j.documents.map(d=>d&&d.id));if(ids.has(undefined))throw Error('Dokumen tidak valid');
-for(const p of j.photos)if(typeof p.id!=='string'||!ids.has(p.docId)||typeof p.orig!=='string'||!p.orig.startsWith('data:image/')||(p.edit&&!String(p.edit).startsWith('data:image/')))throw Error('Data foto tidak lengkap/rusak');
+const ids=new Set(j.documents.map(d=>d&&d.id));if(ids.has(undefined))throw Error('Dokumen tidak valid');if(!j.documents.every(d=>okId(d.id)))throw Error('ID dokumen tidak valid');
+for(const p of j.photos)if(!okId(p.id)||!ids.has(p.docId)||typeof p.orig!=='string'||!p.orig.startsWith('data:image/')||(p.edit&&!String(p.edit).startsWith('data:image/')))throw Error('Data foto tidak lengkap/rusak');
 const e=await est();if(e&&f.size>e.quota-e.usage)throw Error('Ruang penyimpanan tidak cukup');
 if(!confirm(`Backup ${j.createdAt}: ${j.documents.length} dokumen, ${j.photos.length} foto (${mb(f.size)}).\n${mode==='replace'?'SEMUA data lokal akan DIGANTI.':'Akan digabung dengan data lokal.'} Lanjut?`))return;
 toast('Memulihkan…');const ph=[];for(const p of j.photos)ph.push({...p,orig:await (await fetch(p.orig)).blob(),edit:p.edit?await (await fetch(p.edit)).blob():null});
