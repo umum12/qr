@@ -13,15 +13,17 @@ const sfx=(()=>{let ctx=null;const get=()=>{try{ctx=ctx||new(window.AudioContext
 ['pointerup','touchend','click','keydown'].forEach(e=>addEventListener(e,()=>sfx.unlock(),{passive:true}));
 // ---- Kamera dokumentasi (portrait, layar penuh)
 openCam=async function(){if(cam)return;const o=document.createElement('div');o.id='cam';o.className='v2';
- o.innerHTML=`<div class=cw id=cw><video id=cv playsinline muted autoplay></video><canvas id=co></canvas><div class=flash id=cf></div></div>
+ o.innerHTML=`<div class=cstage id=cst><div class=cw id=cw><video id=cv playsinline muted autoplay></video><canvas id=co></canvas><div class=flash id=cf></div></div>
 <div class=ctop><button class=ib onclick="closeCam()" aria-label="Tutup">${ic('x',20)}</button><b id=cn>Kamera</b><div class=cgrp><button class=ib id=cfl onclick="camFlash()" aria-label="Flash"></button><button class=ib id=csn onclick="camSound()" aria-label="Suara shutter"></button><button class=ib id=csw hidden onclick="camSwitch()" aria-label="Ganti kamera">${ic('rotate',20)}</button></div></div>
 <div class=chip id=cs>Memulai kamera…</div>
-<div class=cbot><div class=czoom><span id=czl></span><input type=range id=czr hidden min=1 max=1 step=.1 value=1 oninput="camZoom(+this.value)" aria-label="Zoom"></div>
-<div class=cb><button class=cs2 id=cauto onclick="camAuto()">${ic('eye',18)}<span>Auto</span></button><button class=shut id=csh onclick="camShot()" aria-label="Ambil foto"></button><button class=cs2 onclick="closeCam()"><span>Selesai</span></button></div></div>`;
- document.body.append(o);cam={o,stream:null,corners:null,manual:false,stable:0,miss:0,n:0,devs:[],di:0,busy:false,run:true,t:0,err:0,sound:localStorage.getItem('cam-sound')!=='0',torch:false,cap:null,zoom:1};camUI();sfx.unlock();
+<div class=czoom><span id=czl></span><input type=range id=czr hidden min=1 max=1 step=.1 value=1 oninput="camZoom(+this.value)" aria-label="Zoom"></div></div>
+<div class=cb><button class=cs2 id=cauto onclick="camAuto()">${ic('eye',18)}<span>Auto</span></button><button class=shut id=csh onclick="camShot()" aria-label="Ambil foto"></button><button class=cs2 onclick="closeCam()"><span>Selesai</span></button></div>`;
+ document.body.append(o);cam={o,stream:null,corners:null,manual:false,stable:0,miss:0,n:0,devs:[],di:0,busy:false,run:true,t:0,err:0,sound:localStorage.getItem('cam-sound')!=='0',torch:false,cap:null,zoom:1,view:null};camUI();sfx.unlock();
  try{const l=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('portrait');l&&l.catch&&l.catch(()=>{})}catch{}await camStart()};
-function camFit(){const c=cam,v=$('#cv'),w=$('#cw');if(!c||!v||!w||!v.videoWidth)return;const ar=v.videoWidth/v.videoHeight,W=c.o.clientWidth,H=c.o.clientHeight;let bw=W,bh=W/ar;if(bh>H){bh=H;bw=H*ar}
- w.style.cssText=`position:absolute;left:50%;top:50%;width:${bw}px;height:${bh}px;transform:translate(-50%,-50%)`;camSize();camDraw()}
+// area video yang terlihat (cover): fraksi 0..1 dari frame asli
+function camView(va,ba){return va>ba?{x:(1-ba/va)/2,y:0,w:ba/va,h:1}:{x:0,y:(1-va/ba)/2,w:1,h:va/ba}}
+function camFit(){const c=cam,v=$('#cv'),w=$('#cw'),st=$('#cst');if(!c||!v||!w||!st||!v.videoWidth||!st.clientHeight)return;const ba=st.clientWidth/st.clientHeight;c.view=camView(v.videoWidth/v.videoHeight,ba);
+ w.style.cssText='position:absolute;inset:0';if(!c.sc)c.sc=document.createElement('canvas');c.sc.width=240;c.sc.height=Math.max(1,Math.round(240/ba));camSize();camDraw()}
 addEventListener('resize',()=>{if(cam)camFit()});
 camStart=async function(dev){camStop();const c=cam;if(!c)return;try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Error('Browser tidak mendukung kamera');
  const por=innerHeight>innerWidth,vc={width:{ideal:por?1440:2560},height:{ideal:por?2560:1440},frameRate:{ideal:30}};if(dev)vc.deviceId={exact:dev};else vc.facingMode={ideal:'environment'};
@@ -38,7 +40,23 @@ async function camTorch(){const t=cam&&cam.stream&&cam.stream.getVideoTracks()[0
 async function camFlash(){const c=cam;if(!c)return;if(!c.cap||!c.cap.torch){toast('Flash tidak didukung kamera ini');return}c.torch=!c.torch;await camTorch();camUI()}
 function camSound(){const c=cam;if(!c)return;c.sound=!c.sound;try{localStorage.setItem('cam-sound',c.sound?'1':'0')}catch{}camUI();if(c.sound)sfx.shutter()}
 function camZoom(v){const c=cam;if(!c)return;c.zoom=v;$('#czl').textContent=v.toFixed(1)+'×';clearTimeout(c.zt);c.zt=setTimeout(async()=>{const t=c.stream&&c.stream.getVideoTracks()[0];if(!t)return;try{await t.applyConstraints({advanced:[{zoom:v}]})}catch{}},40)}
-const _shot=camShot;camShot=async function(){const c=cam;if(c&&!c.busy&&c.sound)sfx.shutter();return _shot()};
+camShot=async function(){const c=cam,v=$('#cv');if(!c||c.busy||!v||!v.videoWidth)return;c.busy=true;$('#csh').disabled=true;if(c.sound)sfx.shutter();
+ try{let cn=c.corners?c.corners.map(a=>[...a]):null;const W=v.videoWidth,Hh=v.videoHeight,vw=c.view||{x:0,y:0,w:1,h:1};
+  if(cn&&!c.manual){const mx=cn.reduce((s,p)=>s+p[0],0)/4,my=cn.reduce((s,p)=>s+p[1],0)/4;cn=cn.map(([x,y])=>[clampN(x+(x-mx)*.03),clampN(y+(y-my)*.03)])}
+  const f=document.createElement('canvas'),fx=f.getContext('2d');
+  if(cn){f.width=W;f.height=Hh;fx.drawImage(v,0,0);cn=cn.map(([x,y])=>[vw.x+x*vw.w,vw.y+y*vw.h])}
+  else{f.width=Math.round(vw.w*W);f.height=Math.round(vw.h*Hh);fx.drawImage(v,vw.x*W,vw.y*Hh,vw.w*W,vw.h*Hh,0,0,f.width,f.height)}
+  const orig=await new Promise(r=>f.toBlob(r,'image/jpeg',.92));let edit=null,params=null;
+  if(cn){try{const w=warpC(f,cn,2400);edit=await new Promise(r=>w.toBlob(r,'image/jpeg',.9));params={v:2,rot:0,mode:'orig',b:0,c:0,sh:0,corners:cn}}catch{edit=null;params=null}}
+  const p={id:uid(),docId:cur.doc.id,orig,edit,params,thumb:null,cap:'',ts:new Date().toISOString(),tsEdited:false,order:cur.photos.length,src:'kamera'};
+  p.thumb=await mkThumb(edit||orig);p.ar=mkThumb.last;cur.photos.push(p);await doSave();c.n++;$('#cn').textContent=c.n+' foto';
+  const fl=$('#cf');if(fl){fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')}navigator.vibrate&&navigator.vibrate(25);toast(edit?'Tersimpan · dokumen diluruskan':'Tersimpan')}
+ catch(e){toast('Gagal menyimpan foto: '+e.message)}finally{c.busy=false;const b=$('#csh');if(b)b.disabled=false}};
+// deteksi memakai area yang sama dengan yang terlihat di layar
+camLoop=function(){const c=cam;if(!c||!c.run)return;clearTimeout(c.t);const step=()=>{if(cam!==c||!c.run)return;const t0=performance.now(),v=$('#cv');
+ if(!c.manual&&!document.hidden&&v&&v.videoWidth&&c.view){try{const w=v.videoWidth,h=v.videoHeight,q=c.view;c.sc.getContext('2d',{willReadFrequently:true}).drawImage(v,q.x*w,q.y*h,q.w*w,q.h*h,0,0,c.sc.width,c.sc.height);const r=detect(c.sc);camUpdate(r&&qArea(r)>.1?r:null)}
+  catch(e){if(++c.err>3){c.manual=true;camStatus('Deteksi otomatis nonaktif — atur sudut manual')}}}
+ c.t=setTimeout(step,performance.now()-t0>45?260:130)};step()};
 const _cc=closeCam;closeCam=function(s){try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch{}return _cc(s)};
 // ---- Scan QR
 // QR-START
