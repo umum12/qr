@@ -5,7 +5,7 @@ const mpdf=()=>_mp||(_mp=new window.jspdf.jsPDF({unit:'mm',format:'a4'}));
 function layoutFor(d,ph){const L=d.orient==='l',W=L?297:210,H=L?210:297,m=+d.margin||10,g=+d.gap||4,cfs=+d.cfs||8,hfs=+d.hfs||14,lh=cfs*LHF,pdf=mpdf();
  pdf.setFont('helvetica','bold');pdf.setFontSize(hfs);let fs=hfs;if(d.title)while(pdf.getTextWidth(d.title)>W-2*m&&fs>7)pdf.setFontSize(--fs);
  const hT=d.title?fs*.3528*1.3+2:0,hS=d.subtitle?6:0,hh=hT+hS+(hT||hS?3:0);
- const meas=(i,w)=>{pdf.setFontSize(cfs);pdf.setFont('helvetica','bold');const cl=ph[i].cap?pdf.splitTextToSize(ph[i].cap,w):[];pdf.setFont('helvetica','normal');return{cl,tl:pdf.splitTextToSize('Dokumentasi: '+fmt(ph[i].ts),w)}};
+ const meas=(i,w)=>{pdf.setFontSize(cfs);pdf.setFont('helvetica','bold');const cl=ph[i].cap?pdf.splitTextToSize(ph[i].cap,w):[];pdf.setFont('helvetica','normal');return{cl,tl:pdf.splitTextToSize((ph[i].cap?'Dokumentasi: ':'')+fmt(ph[i].ts),w)}};
  const plan=LayoutEngine.plan({ar:ph.map(p=>p.ar||.75),W,H,m,g,hh,mode:d.mode,val:+d.val||1,meas,lh});
  return Object.assign(plan,{W,H,m,hh,fs,hT,cfs,lh,L})}
 const IMC=new WeakMap(),BM=new WeakMap();
