@@ -92,3 +92,9 @@ body.booting{overflow:hidden}
 #qwrap{display:flex;flex-direction:column}#qres{order:-1;border:2px solid var(--pr)}#qres[hidden]{display:none}
 .qlink{display:block;font-size:19px;font-weight:700;color:var(--pr);word-break:break-all;text-decoration:underline;margin:6px 0 10px}
 .cdw{font-size:14px;margin:6px 0 10px}.cdbar{height:6px;border-radius:9px;background:var(--bd);overflow:hidden;margin-top:6px}.cdbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pr),var(--pr2))}
+/* v1.8.1 — preview kamera memenuhi layar: dari atas sampai batas baris tombol */
+#cam.v2 .cstage{position:relative;flex:1;min-height:0;overflow:hidden;background:#000}
+#cam.v2 .cw video{object-fit:cover}
+#cam.v2 .chip{top:calc(env(safe-area-inset-top) + 66px)}
+#cam.v2 .czoom{position:absolute;left:16px;right:16px;bottom:12px;z-index:3;padding:2px 14px;border-radius:99px;background:#0008;color:#fff}
+#cam.v2 .cb{flex:none;background:#000;padding:10px 10px calc(14px + env(safe-area-inset-bottom))}
