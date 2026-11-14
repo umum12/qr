@@ -30,8 +30,8 @@ ensureThumbs=async function(){let i=0;for(const p of cur.photos){i++;if((!p.thum
 const toB64=b=>new Promise((res,rej)=>{const f=new FileReader();f.onload=()=>res(f.result);f.onerror=()=>rej(f.error);f.readAsDataURL(b)});
 backup=async function(){busy(true,'Membuat backup…');try{const d=await all('documents'),ps=await all('photos'),parts=[new Blob([JSON.stringify({app:'PWA Dokumentasi Struk',backupVersion:2,createdAt:new Date().toISOString(),documents:d,photoCount:ps.length,settings:{},qrHistory:[]})+'\n'])];let i=0;
  for(const p of ps){bmsg(`Backup foto ${++i}/${ps.length}…`);parts.push(new Blob([JSON.stringify({...p,thumb:undefined,orig:await toB64(p.orig),edit:p.edit?await toB64(p.edit):null})+'\n']))}   // tiap baris langsung jadi Blob → string dilepas
- const b=new Blob(parts,{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`Backup_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000);toast(`Backup: ${d.length} dokumen, ${ps.length} foto, ${mb(b.size)}`)}
- catch(e){toast('Backup gagal: '+e.message)}finally{busy(false)}};
+ const b=new Blob(parts,{type:'application/json'});busy(false);const act=await deliverFile(b,`Backup_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.json`,'Cadangan siap');if(act){try{localStorage.setItem('lastBackup',new Date().toISOString())}catch{}toast(`Cadangan tersimpan: ${d.length} dokumen, ${ps.length} foto, ${mb(b.size)}`)}}
+ catch(e){toast('Cadangan gagal: '+e.message)}finally{busy(false)}};
 async function* lineIter(f){const dec=new TextDecoder(),CH=4<<20;let buf='';for(let o=0;o<f.size;o+=CH){buf+=dec.decode(new Uint8Array(await f.slice(o,o+CH).arrayBuffer()),{stream:true});let i;while((i=buf.indexOf('\n'))>=0){const l=buf.slice(0,i);buf=buf.slice(i+1);if(l.trim())yield l}}buf+=dec.decode();if(buf.trim())yield buf}
 const dataBlob=async u=>(await fetch(u)).blob();
 async function restoreV2(f,mode){let head=null,n=0;const ids=new Set();
@@ -40,7 +40,7 @@ async function restoreV2(f,mode){let head=null,n=0;const ids=new Set();
    const p=JSON.parse(l);n++;if(!okId(p.id)||!ids.has(p.docId)||typeof p.orig!=='string'||!p.orig.startsWith('data:image/')||(p.edit&&!String(p.edit).startsWith('data:image/')))throw Error(`Data foto ke-${n} tidak valid`);if(n%5===0)bmsg(`Memeriksa backup… ${n}`)}
   if(!head)throw Error('File kosong');if(n!==head.photoCount)throw Error(`Jumlah foto tidak cocok (${n} dari ${head.photoCount}); file mungkin terpotong`);
   const e=await est();if(e&&f.size>e.quota-e.usage)throw Error('Ruang penyimpanan tidak cukup');
-  if(!confirm(`Backup ${head.createdAt}: ${head.documents.length} dokumen, ${n} foto (${mb(f.size)}).\n${mode==='replace'?'SEMUA data lokal akan DIGANTI setelah seluruh backup berhasil dibaca.':'Akan digabung dengan data lokal.'} Lanjut?`))return;
+  if(!(await ask('Pulihkan cadangan?',`Backup ${head.createdAt}: ${head.documents.length} dokumen, ${n} foto (${mb(f.size)}).\n${mode==='replace'?'SEMUA data lokal akan DIGANTI setelah seluruh backup berhasil dibaca.':'Akan digabung dengan data lokal.'} Lanjut?`,'Pulihkan',true)))return;
   const exDocs=new Set((await all('documents')).map(d=>d.id)),exPh=new Set((await all('photos')).map(p=>p.id)),dmap=new Map(),ins=new Set();
   head.documents.forEach(d=>dmap.set(d.id,mode==='merge'&&exDocs.has(d.id)?uid():d.id));
   try{let k=0,first=true;   // Tahap 2: tulis foto satu per satu (id bentrok diganti); gagal → rollback
@@ -55,7 +55,7 @@ async function restoreV2(f,mode){let head=null,n=0;const ids=new Set();
 // BACKUP-END
 {const _rs1=restore;restore=async function(f,mode){if(!f)return;let head='';try{head=await f.slice(0,300).text()}catch{}
  if(/"backupVersion":2/.test(head)){busy(true,'Memeriksa backup…');try{return await restoreV2(f,mode)}finally{busy(false)}}
- if(f.size>120*1048576&&!confirm('Backup format lama (v1) ini besar dan dibaca sekaligus ke memori; bisa gagal di HP RAM kecil. Lanjutkan?'))return;return _rs1(f,mode)}}
+ if(f.size>120*1048576&&!(await ask('Backup lama berukuran besar','Format lama (v1) dibaca sekaligus ke memori dan bisa gagal di HP RAM kecil. Lanjutkan?','Lanjutkan')))return;return _rs1(f,mode)}}
 // ---- L2: jsPDF & jsQR dimuat sesuai kebutuhan (tetap ada di cache offline)
 const LIBS={jspdf:['vendor/jspdf.umd.min.js',()=>window.jspdf],jsqr:['vendor/jsQR.js',()=>window.jsQR]},_lp={};
 function need(k){if(LIBS[k][1]())return Promise.resolve();return _lp[k]||(_lp[k]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=LIBS[k][0];s.onload=res;s.onerror=()=>{delete _lp[k];rej(Error('Gagal memuat '+k))};document.head.append(s)}))}
@@ -71,8 +71,8 @@ const OV=[];let _hs=0;
 function ovOpen(id,fn){if(OV.some(o=>o.id===id))return;OV.push({id,fn});history.pushState({ov:id},'')}
 function ovClosed(id){const i=OV.findIndex(o=>o.id===id);if(i<0)return;OV.splice(i,1);if(history.state&&history.state.ov===id){_hs++;history.back()}}
 addEventListener('popstate',()=>{if(_hs>0){_hs--;return}const o=OV.pop();if(o)o.fn()});
-{const mo=$('#modal');new MutationObserver(()=>mo.hidden?ovClosed('modal'):ovOpen('modal',()=>{if(ed)edClose();else mo.hidden=true})).observe(mo,{attributes:true,attributeFilter:['hidden']});
- new MutationObserver(()=>{[['cam',()=>closeCam()],['dtp',()=>{const b=$('#dtp [data-a=cancel]');b&&b.click()}]].forEach(([id,fn])=>$('#'+id)?ovOpen(id,fn):ovClosed(id))}).observe(document.body,{childList:true})}
+{const mo=$('#modal'),modalClose=()=>{if(ed){if(typeof edDirty==='function'&&edDirty())ovOpen('modal',modalClose);edClose()}else mo.hidden=true};new MutationObserver(()=>mo.hidden?ovClosed('modal'):ovOpen('modal',modalClose)).observe(mo,{attributes:true,attributeFilter:['hidden']});
+ new MutationObserver(()=>{[['cam',()=>closeCam(),'#cam'],['dtp',()=>{const b=$('#dtp [data-a=cancel]');b&&b.click()},'#dtp'],['sheet',()=>{const s=$('.sheet-bg');s&&s.click()},'.sheet-bg']].forEach(([id,fn,q])=>$(q)?ovOpen(id,fn):ovClosed(id))}).observe(document.body,{childList:true})}
 // ---- M2: kamera terputus / aplikasi kembali dari background
 let _lost=0;
 function camLost(c){if(cam!==c||!c.run||c.busy)return;if(++_lost>3){camStatus('Kamera terputus — tutup lalu buka lagi');return}camStatus('Kamera terputus — memulai ulang…');setTimeout(()=>{if(cam===c&&c.run){const d=c.devs[c.di];camStart(d&&d.deviceId)}},300)}

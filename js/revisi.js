@@ -18,7 +18,7 @@ openCam=async function(){if(cam)return;const o=document.createElement('div');o.i
 <div class=ctop><button class=ib onclick="closeCam()" aria-label="Tutup">${ic('x',20)}</button><b id=cn>Kamera</b><div class=cgrp><button class=ib id=cfl onclick="camFlash()" aria-label="Flash"></button><button class=ib id=csn onclick="camSound()" aria-label="Suara shutter"></button><button class=ib id=csw hidden onclick="camSwitch()" aria-label="Ganti kamera">${ic('rotate',20)}</button></div></div>
 <div class=chip id=cs>Memulai kamera…</div>
 <div class=czoom><span id=czl></span><input type=range id=czr hidden min=1 max=1 step=.1 value=1 oninput="camZoom(+this.value)" aria-label="Zoom"></div></div>
-<div class=cb><button class=cs2 id=cauto onclick="camAuto()">${ic('eye',18)}<span>Auto</span></button><button class=shut id=csh onclick="camShot()" aria-label="Ambil foto"></button><button class=cs2 onclick="closeCam()"><span>Selesai</span></button></div>`;
+<div class=cb><button class=cs2 id=cauto onclick="camAuto()">${ic('eye',18)}<span>Otomatis</span></button><button class=shut id=csh onclick="camShot()" aria-label="Ambil foto"></button><button class=cs2 onclick="closeCam()"><span>Selesai</span></button></div>`;
  document.body.append(o);cam={o,stream:null,corners:null,manual:false,stable:0,miss:0,n:0,devs:[],di:0,busy:false,run:true,t:0,err:0,sound:localStorage.getItem('cam-sound')!=='0',torch:false,cap:null,zoom:1,view:null};camUI();sfx.unlock();
  try{const l=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('portrait');l&&l.catch&&l.catch(()=>{})}catch{}await camStart()};
 // area video yang terlihat (cover): fraksi 0..1 dari frame asli
@@ -47,11 +47,11 @@ camShot=async function(){const c=cam,v=$('#cv');if(!c||c.busy||!v||!v.videoWidth
   const f=document.createElement('canvas'),fx=f.getContext('2d');
   if(cn){f.width=W;f.height=Hh;fx.drawImage(v,0,0);cn=cn.map(([x,y])=>[vw.x+x*vw.w,vw.y+y*vw.h])}
   else{f.width=Math.round(vw.w*W);f.height=Math.round(vw.h*Hh);fx.drawImage(v,vw.x*W,vw.y*Hh,vw.w*W,vw.h*Hh,0,0,f.width,f.height)}
-  const orig=await new Promise(r=>f.toBlob(r,'image/jpeg',.92));let edit=null,params=null;
+  const orig=await new Promise(r=>f.toBlob(r,'image/jpeg',.92));const bl=typeof blurScore==='function'?blurScore(f):999;let edit=null,params=null;
   if(cn){try{const w=warpC(f,cn,procMax());edit=await new Promise(r=>w.toBlob(r,'image/jpeg',.9));params={v:2,rot:0,mode:'orig',b:0,c:0,sh:0,corners:cn}}catch{edit=null;params=null}}
   const p={id:uid(),docId:cur.doc.id,orig,edit,params,thumb:null,cap:'',ts:new Date().toISOString(),tsEdited:false,order:cur.photos.length,src:'kamera'};
   p.thumb=await mkThumb(edit||orig);p.ar=mkThumb.last;cur.photos.push(p);await doSave();c.n++;$('#cn').textContent=c.n+' foto';
-  const fl=$('#cf');if(fl){fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')}navigator.vibrate&&navigator.vibrate(25);toast(edit?'Tersimpan · dokumen diluruskan':'Tersimpan')}
+  const fl=$('#cf');if(fl){fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')}navigator.vibrate&&navigator.vibrate(25);toast((edit?'Tersimpan · dokumen diluruskan':'Tersimpan')+(bl<BLUR_T?' — foto tampak kurang tajam, coba Ulangi':''))}
  catch(e){toast('Gagal menyimpan foto: '+e.message)}finally{c.busy=false;const b=$('#csh');if(b)b.disabled=false}};
 // deteksi memakai area yang sama dengan yang terlihat di layar
 camLoop=function(){const c=cam;if(!c||!c.run)return;clearTimeout(c.t);const step=()=>{if(cam!==c||!c.run)return;const t0=performance.now(),v=$('#cv');
@@ -70,12 +70,12 @@ function qrRisk(u){const x=new URL(u),w=[],h=x.hostname;let block=false;if(x.pro
  if(h.split('.').some(s=>s.startsWith('xn--'))){w.push('Domain punycode (bisa menyerupai domain lain)');block=true}if(x.username||x.password){w.push('Mengandung nama pengguna/kata sandi di URL');block=true}return{w,block,host:h}}
 qrShow=function(t){qrCancel(true);const u=qrValid(t),rk=u?qrRisk(u):null,auto=!!u&&!rk.block;qrCur={text:t,url:u};qlast=t;sfx.success();navigator.vibrate&&navigator.vibrate(40);const r=$('#qres');if(!r)return;r.hidden=false;
  r.innerHTML=`<span class=tag>${u?'Tautan':'Teks'}</span>${u?`<div class=qhost>${esc(rk.host)}</div><a class=qlink href="${esc(u)}" target=_blank rel=noopener onclick="qrCancel()">${esc(u)}</a>${rk.w.length?`<div class=qwarn>⚠ ${rk.w.map(esc).join(' · ')}</div>`:''}${auto?`<div id=cdw class=cdw>Membuka otomatis dalam <b id=cdn>${QR_DELAY/1000}</b> detik…<div class=cdbar><i id=cdb></i></div></div>`:`<div class=cdw>Redirect otomatis dinonaktifkan untuk tautan ini. Buka hanya jika Anda percaya.</div>`}`:`<p class=res>${esc(t)}</p>`}
- <div class=row>${u?`<a class=btn href="${esc(u)}" target=_blank rel=noopener style="text-decoration:none" onclick="qrCancel()">${ic('link',18)}<span>Buka Sekarang</span></a>`:''}${auto?B('x','Batalkan','s','qrCancel()'):''}${B('copy','Salin','s',"navigator.clipboard.writeText(qlast).then(()=>toast('Disalin'))")}${B('rotate','Scan Lagi','s','qrAgain()')}</div>`;
+ <div class=row>${u?`<a class=btn href="${esc(u)}" target=_blank rel=noopener style="text-decoration:none" onclick="qrCancel()">${ic('link',18)}<span>Buka Sekarang</span></a>`:''}${auto?B('x','Batalkan','s','qrCancel()'):''}${B('copy','Salin','s',"navigator.clipboard.writeText(qlast).then(()=>toast('Disalin'))")}${B('rotate','Pindai Lagi','s','qrAgain()')}</div>`;
  scrollTo({top:0,behavior:'smooth'});if(auto)qrCountdown(u)};
 // QR-END
 let qrGen=0;const _qstop=qrStop;qrStop=function(){qrGen++;_qstop()};
 function qrAgain(){qrCancel(true);qrCur=null;const r=$('#qres');if(r)r.hidden=true;if(!qs){const s=$('#cams');qrStart(s&&s.value||undefined)}}
-V.qr=async()=>{qrCancel(true);qrCur=null;M.innerHTML=`<div id=qwrap><section id=qres class="panel qres" hidden></section><section id=qcam class=panel><select id=cams onchange="qrStart(this.value)"></select><div class=scan><video id=vd playsinline muted></video></div><label class="btn s" style="width:100%;margin-top:10px">${ic('image',18)}<span>Pilih QR dari Galeri</span><input type=file accept="image/*" hidden onchange="qrFile(this.files[0]);this.value=''"></label><p id=qhint style="text-align:center"><small>Arahkan kamera ke QR Code</small></p></section></div>`;qrStart()};
+V.qr=async()=>{qrCancel(true);qrCur=null;M.innerHTML=`<div id=qwrap><section id=qres class="panel qres" hidden></section><section id=qcam class=panel><select id=cams aria-label="Pilih kamera" onchange="qrStart(this.value)"></select><div class=scan><video id=vd playsinline muted></video></div><label class="btn s" style="width:100%;margin-top:10px">${ic('image',18)}<span>Pilih QR dari Galeri</span><input type=file accept="image/*" hidden onchange="qrFile(this.files[0]);this.value=''"></label><p id=qhint style="text-align:center"><small>Arahkan kamera ke QR Code</small></p></section></div>`;qrStart()};
 qrStart=async function(dev){qrStop();const my=qrGen;try{const st=await navigator.mediaDevices.getUserMedia({video:dev?{deviceId:{exact:dev}}:{facingMode:{ideal:'environment'}}});if(my!==qrGen){st.getTracks().forEach(t=>t.stop());return}qs=st;qs.getVideoTracks()[0].onended=()=>qrLost();const v=$('#vd');if(!v){qrStop();return}v.srcObject=qs;await v.play();if(my!==qrGen)return;
  const s=$('#cams');if(s&&!s.options.length)(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput').forEach((c,i)=>s.add(new Option(c.label||'Kamera '+(i+1),c.deviceId)));
  const cv=document.createElement('canvas'),x=cv.getContext('2d',{willReadFrequently:true});let last=0;

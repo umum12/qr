@@ -27,7 +27,7 @@ async function drawPlan(plan,ph,d,pw){const s=pw/plan.W,out=[];for(const pg of p
  x.strokeStyle='#bbb';x.strokeRect(.5,.5,c.width-1,c.height-1);out.push(c)}return out}
 const sum=p=>`<b>${p.pages.length}</b> halaman · foto terkecil ≈ ${Math.round(p.minD)} mm`+(p.warn?' <span style="color:var(--dg)">· keterbacaan mungkin berkurang, pertimbangkan menambah halaman</span>':'');
 preview=wrap(async function(){try{await doSave();await ensureThumbs();const{doc:d,photos:ph}=cur;if(!ph.length)throw Error('Belum ada foto');const plan=layoutFor(d,ph),cs=await drawPlan(plan,ph,d,420),m=$('#modal');
- m.hidden=false;m.innerHTML=`<div class=sheet-h><b>Preview PDF</b>${IB('x','Tutup','',"$('#modal').hidden=true")}</div><p>${sum(plan)}</p><div id=pv></div>`;$('#pv').append(...cs)}catch(e){toast(e.message)}},'Membuat preview…');
+ m.hidden=false;m.innerHTML=`<div class=sheet-h><b>Pratinjau PDF</b>${IB('x','Tutup','',"$('#modal').hidden=true")}</div><p>${sum(plan)}</p><div id=pv></div>`;$('#pv').append(...cs)}catch(e){toast(e.message)}},'Membuat preview…');
 let _lt,_lg=0;function lpSoon(){clearTimeout(_lt);_lt=setTimeout(lpRun,120)}
 async function lpRun(){const el=$('#lp');if(!el)return;if(!cur||!cur.photos.length){el.replaceChildren();$('#lps').textContent='Tambahkan foto untuk melihat layout.';return}const g=++_lg;
  try{const{doc:d,photos:ph}=cur;if(ph.some(p=>!p.ar||!p.thumb))await ensureThumbs();const plan=layoutFor(d,ph),cs=await drawPlan(plan,ph,d,360);if(g!==_lg||!$('#lp'))return;$('#lps').innerHTML=sum(plan);el.replaceChildren(...cs)}

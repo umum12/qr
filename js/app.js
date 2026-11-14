@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s),M=$('#main');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
-const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,4000)};
+const toast=m=>{if(typeof friendlyMsg==='function'){const f=friendlyMsg(m);var chg=f!==m;m=f}const t=$('#toast'),err=!!chg||/^(Gagal|Error|Terjadi kesalahan|Backup gagal|Restore dibatalkan|Kamera terputus|Tidak bisa|Cadangan gagal)/.test(m);t.textContent='';const sp=document.createElement('span');sp.textContent=m;t.append(sp);if(err){const b=document.createElement('button');b.textContent='Tutup';b.onclick=()=>t.hidden=true;t.append(b)}t.setAttribute('role',err?'alert':'status');t.hidden=false;clearTimeout(toast.t);if(!err)toast.t=setTimeout(()=>t.hidden=true,4000)};
 const WD=['Min','Sen','Sel','Rab','Kam','Jum','Sab'],MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const fmt=iso=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jakarta',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso)).map(x=>[x.type,x.value]));const wd=new Date(Date.UTC(+p.year,p.month-1,+p.day)).getUTCDay();return `${WD[wd]}, ${p.day.padStart(2,'0')} ${MN[p.month-1]} ${p.year} · ${p.hour}:${p.minute} WIB`};
 const jk=iso=>new Date(iso).toLocaleString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,16).replace(' ','T');
@@ -77,8 +77,7 @@ r.items.forEach((t,i)=>{if(t.pg!==pg)return;x.drawImage(imgs[i],t.x*s,t.y*s,t.w*
 $('#pv').append(c)}}catch(e){toast(e.message)}}
 async function exportPdf(){try{toast('Membuat PDF…');await doSave();const r=await build(),b=r.pdf.output('blob'),name=`Dokumentasi_Struk_${new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})}.pdf`;
 cur.doc.pdfs.push({at:new Date().toISOString(),pages:r.pages});await doSave();
-const f=new File([b],name,{type:'application/pdf'});if(navigator.canShare&&navigator.canShare({files:[f]})&&confirm('Bagikan PDF lewat menu berbagi Android? (Batal = unduh)')){try{await navigator.share({files:[f]});return}catch{}}
-const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000);toast(r.warn?'PDF dibuat. Peringatan: foto kecil, keterbacaan mungkin berkurang':'PDF dibuat')}catch(e){toast(e.message)}}
+busy(false);const act=await deliverFile(b,name,'PDF siap');if(act)toast(r.warn?'PDF dibuat. Peringatan: foto kecil, keterbacaan mungkin berkurang':'PDF dibuat')}catch(e){toast('Gagal membuat PDF: '+e.message)}}
 // ---- Arsip
 V.arc=async()=>{const d=(await all('documents')).sort((a,b)=>b.created.localeCompare(a.created)),p=await all('photos');M.innerHTML=`<h2>Arsip</h2>${d.length?'':'<p>Belum ada dokumen.</p>'}${d.map(x=>`<div class=box><b>${esc(x.title||'(tanpa judul)')}</b><br><small>${fmt(x.created)} · ${p.filter(q=>q.docId===x.id).length} foto · ${(x.pdfs||[]).length}× PDF</small><div class=row><button onclick="openDoc('${x.id}')">Buka</button><button class=d onclick="delDoc('${x.id}')">Hapus</button></div></div>`).join('')}`};
 async function delDoc(id){if(!confirm('Hapus dokumen beserta semua fotonya?'))return;const ps=(await all('photos')).filter(p=>p.docId===id),tx=db.transaction(['documents','photos'],'readwrite');tx.objectStore('documents').delete(id);ps.forEach(p=>tx.objectStore('photos').delete(p.id));await done(tx);if(cur&&cur.doc.id===id)cur=null;V.arc()}
@@ -96,7 +95,7 @@ if(j.app!=='PWA Dokumentasi Struk'||j.backupVersion!==1||!Array.isArray(j.docume
 const ids=new Set(j.documents.map(d=>d&&d.id));if(ids.has(undefined))throw Error('Dokumen tidak valid');if(!j.documents.every(d=>okId(d.id)))throw Error('ID dokumen tidak valid');
 for(const p of j.photos)if(!okId(p.id)||!ids.has(p.docId)||typeof p.orig!=='string'||!p.orig.startsWith('data:image/')||(p.edit&&!String(p.edit).startsWith('data:image/')))throw Error('Data foto tidak lengkap/rusak');
 const e=await est();if(e&&f.size>e.quota-e.usage)throw Error('Ruang penyimpanan tidak cukup');
-if(!confirm(`Backup ${j.createdAt}: ${j.documents.length} dokumen, ${j.photos.length} foto (${mb(f.size)}).\n${mode==='replace'?'SEMUA data lokal akan DIGANTI.':'Akan digabung dengan data lokal.'} Lanjut?`))return;
+if(!(await ask('Pulihkan cadangan?',`Backup ${j.createdAt}: ${j.documents.length} dokumen, ${j.photos.length} foto (${mb(f.size)}).\n${mode==='replace'?'SEMUA data lokal akan DIGANTI.':'Akan digabung dengan data lokal.'} Lanjut?`,'Pulihkan',true)))return;
 toast('Memulihkan…');const ph=[];for(const p of j.photos)ph.push({...p,orig:await (await fetch(p.orig)).blob(),edit:p.edit?await (await fetch(p.edit)).blob():null});
 const docs=j.documents.map(d=>({...d}));
 if(mode==='merge'){const ed=new Set((await all('documents')).map(d=>d.id)),ep=new Set((await all('photos')).map(p=>p.id));docs.forEach(d=>{if(ed.has(d.id)){const n=uid();ph.forEach(p=>{if(p.docId===d.id)p.docId=n});d.id=n}});ph.forEach(p=>{if(ep.has(p.id))p.id=uid()})}

@@ -60,7 +60,7 @@ function detect(bmp){const k=200/Math.max(bmp.width,bmp.height),w=Math.round(bmp
  let a=1e9,b=-1e9,e=-1e9,f=1e9,tl,br,tr,bl;for(const p of best){const px=p%w,py=(p/w)|0,s=px+py,df=px-py;if(s<a){a=s;tl=[px,py]}if(s>b){b=s;br=[px,py]}if(df>e){e=df;tr=[px,py]}if(df<f){f=df;bl=[px,py]}}
  return[tl,tr,br,bl].map(([px,py])=>[px/w,py/h])}
 // ===== Editor: langkah 1 potong (4 titik kuning), langkah 2 filter =====
-const MODES=[['orig','Original'],['enh','Enhance'],['gray','Abu-abu'],['bw','Hitam Putih']],BOX=()=>[[.02,.02],[.98,.02],[.98,.98],[.02,.98]];
+const MODES=[['orig','Asli'],['enh','Perjelas'],['gray','Abu-abu'],['bw','Hitam Putih']],BOX=()=>[[.02,.02],[.98,.02],[.98,.98],[.02,.98]];
 edP=async function(i){const p=cur.photos[i];busy(true,'Membuka foto…');try{const bmp=await createImageBitmap(p.orig),pr=p.params&&p.params.corners?p.params:null;let cn=pr?pr.corners.map(a=>[...a]):null,msg='';
  if(!cn){cn=detect(bmp);msg=cn?'Batas struk terdeteksi, geser titik bila perlu':'Deteksi otomatis kurang yakin, atur titik manual';cn=cn||BOX()}
  ed={i,p,bmp,cache:{},step:'crop',s:{rot:pr?pr.rot:0,mode:pr?pr.mode:'orig',b:pr?pr.b:0,c:pr?pr.c:0,sh:pr?pr.sh:0,corners:cn}};$('#modal').hidden=false;eStep('crop');if(msg)toast(msg)}catch(e){toast('Gagal membuka foto: '+e.message)}finally{busy(false)}};

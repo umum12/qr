@@ -31,7 +31,7 @@ function camDraw(){const c=cam,cv=$('#co');if(!c||!cv)return;const x=cv.getConte
  if(!c.corners){x.strokeStyle='#ffffff88';x.setLineDash([10*d,8*d]);x.lineWidth=2*d;x.strokeRect(W*.1,H*.1,W*.8,H*.8);return}
  const p=c.corners.map(([a,b])=>[a*W,b*H]),col=c.manual?'#38bdf8':c.stable>=3?'#22c55e':'#facc15';x.beginPath();p.forEach((q,i)=>i?x.lineTo(...q):x.moveTo(...q));x.closePath();x.fillStyle=col+'30';x.fill();x.strokeStyle=col;x.lineWidth=3*d;x.stroke();
  p.forEach(([a,b])=>{x.beginPath();x.arc(a,b,12*d,0,7);x.fillStyle=col;x.fill();x.strokeStyle='#fff';x.lineWidth=2*d;x.stroke()})}
-function bindDrag(){const cv=$('#co');let k=-1;const pos=e=>{const r=cv.getBoundingClientRect();return[Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)),Math.min(1,Math.max(0,(e.clientY-r.top)/r.height))]};
+function bindDrag(){const cv=$('#co');let k=-1;const pos=e=>{const r=cv.getBoundingClientRect();return[_cm((e.clientX-r.left)/r.width),_cm((e.clientY-r.top)/r.height)]};
  cv.onpointerdown=e=>{const c=cam,[px,py]=pos(e),r=cv.getBoundingClientRect(),had=!!c.corners;if(!had)c.corners=[[.1,.1],[.9,.1],[.9,.9],[.1,.9]];let bd=1e9;c.corners.forEach(([x,y],i)=>{const t=Math.hypot((x-px)*r.width,(y-py)*r.height);if(t<bd){bd=t;k=i}});
   if(bd>52){k=-1;if(!had)c.corners=null;camDraw();return}c.manual=true;cv.setPointerCapture(e.pointerId);camStatus('Mode manual — geser titik sudut');camDraw()};
  cv.onpointermove=e=>{if(k<0)return;cam.corners[k]=pos(e);camDraw()};cv.onpointerup=cv.onpointercancel=()=>{k=-1}}
